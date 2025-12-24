@@ -38,6 +38,22 @@ public class MyThreadPool {
 //        }
     }
 
+    public List<Runnable> shutdownNow() {
+        Logger.log("！！！立即关闭线程池！！！");
+        isShutdown = true;
+
+        // 1. 提取所有还没开始执行的任务
+        List<Runnable> droppedTasks = taskQueue.drainTo();
+
+        // 2. 暴力中断所有正在执行的 Worker
+        for (Worker worker : workers) {
+            worker.interrupt();
+        }
+
+        Logger.log("已拦截未执行任务数量: " + droppedTasks.size());
+        return droppedTasks;
+    }
+
     // 内部类：打工人
     private class Worker extends Thread {
         public Worker(String name) { super(name); }

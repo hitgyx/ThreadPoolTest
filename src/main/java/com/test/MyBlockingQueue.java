@@ -1,6 +1,8 @@
 package com.test;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -85,6 +87,19 @@ public class MyBlockingQueue<T> {
             T item = queue.removeFirst();
             notFull.signal(); // 拿走了一个，通知生产者
             return item;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public List<T> drainTo() {
+        lock.lock();
+        try {
+            List<T> remaining = new ArrayList<>(queue);
+            queue.clear();
+            // 既然清空了，可以通知生产者（虽然在关闭时这不重要，但保持逻辑完整）
+            notFull.signalAll();
+            return remaining;
         } finally {
             lock.unlock();
         }
