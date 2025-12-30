@@ -54,6 +54,20 @@ public class MyThreadPool {
         return droppedTasks;
     }
 
+    public <V> MyFuture<V> submit(MyCallable<V> callable) throws InterruptedException {
+        MyFuture<V> future = new MyFuture<>();
+        execute(() -> {
+            try {
+                V result = callable.call();
+                future.set(result);
+            } catch (Exception e) {
+                Logger.log("捕获到任务异常，正在传回 Future");
+                future.setException(e); // 将异常塞入凭证
+            }
+        });
+        return future;
+    }
+
     // 内部类：打工人
     private class Worker extends Thread {
         public Worker(String name) { super(name); }
