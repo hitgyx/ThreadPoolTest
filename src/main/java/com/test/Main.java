@@ -8,9 +8,10 @@ public class Main {
         MyThreadPool pool = new MyThreadPool(2, 20);
 
         try {
-            testBasicExecute(pool);
+//            testBasicExecute(pool);
 //            testFutureGet(pool);
 //            testGracefulShutdown(pool);
+            testSchedule(pool);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } catch (Exception e) {
@@ -47,6 +48,17 @@ public class Main {
         });
         pool.shutdown();
         Logger.log("已发出关闭指令，等待 Worker 退出...");
+    }
+
+    public static void testSchedule(MyThreadPool pool) throws Exception {
+        Logger.log("提交 3s 延迟任务");
+        MyFuture<String> f1 = pool.schedule(() -> "Task 3s", 3000);
+
+        Logger.log("提交 1s 延迟任务");
+        MyFuture<String> f2 = pool.schedule(() -> "Task 1s", 1000);
+
+        Logger.log("1s 任务结果: " + f2.get());
+        Logger.log("3s 任务结果: " + f1.get());
     }
 }
 

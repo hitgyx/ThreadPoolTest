@@ -7,12 +7,14 @@ import java.util.concurrent.TimeUnit;
 public class MyThreadPool {
     // 任务队列：存放 Runnable 任务
     private final MyBlockingQueue<Runnable> taskQueue;
+    private final MyDelayQueue<DelayedTask<?>> delayTaskQueue;
     // 工作线程列表
     private final List<Worker> workers = new ArrayList<>();
     private volatile boolean isShutdown = false; // 状态位
 
     public MyThreadPool(int numThreads, int capacity) {
         this.taskQueue = new MyBlockingQueue<>(capacity);
+        this.delayTaskQueue = new MyDelayQueue<>();
 
         // 初始化并启动指定数量的工作线程
         for (int i = 0; i < numThreads; i++) {
@@ -54,17 +56,32 @@ public class MyThreadPool {
         return droppedTasks;
     }
 
+//    public <V> MyFuture<V> submit(MyCallable<V> callable) throws InterruptedException {
+//        MyFuture<V> future = new MyFuture<>();
+//        execute(() -> {
+//            try {
+//                V result = callable.call();
+//                future.set(result);
+//            } catch (Exception e) {
+//                Logger.log("捕获到任务异常，正在传回 Future");
+//                future.setException(e); // 将异常塞入凭证
+//            }
+//        });
+//        return future;
+//    }
+
+    // 立即执行：相当于延迟 0 毫秒
     public <V> MyFuture<V> submit(MyCallable<V> callable) throws InterruptedException {
+        return schedule(callable, 0);
+    }
+
+    // 定时执行
+    public <V> MyFuture<V> schedule(MyCallable<V> callable, long delayMs) throws InterruptedException {
+        if (isShutdown) throw new IllegalStateException("ThreadPool is closed");
+
         MyFuture<V> future = new MyFuture<>();
-        execute(() -> {
-            try {
-                V result = callable.call();
-                future.set(result);
-            } catch (Exception e) {
-                Logger.log("捕获到任务异常，正在传回 Future");
-                future.setException(e); // 将异常塞入凭证
-            }
-        });
+        DelayedTask<V> task = new DelayedTask<>(callable, future, delayMs);
+        delayTaskQueue.put(task); // 放入延时队列
         return future;
     }
 
@@ -74,23 +91,19 @@ public class MyThreadPool {
 
         @Override
         public void run() {
-            // 不断从队列里拿任务，拿不到就会在 MyBlockingQueue.take() 里阻塞等待
-            while (!isShutdown || !taskQueue.isEmpty()) {
+            // 优雅退出逻辑：只要没关闭，或者队列里还有定时任务没到期
+            while (!isShutdown || !delayTaskQueue.isEmpty()) {
                 try {
-                    // 尝试拿任务，最多等 100 毫秒
-                    Runnable task = taskQueue.poll(100, TimeUnit.MILLISECONDS);
+                    // take() 会阻塞，直到有任务且时间到达
+                    DelayedTask<?> task = delayTaskQueue.take();
                     if (task != null) {
-                        Logger.log(getName() + " 开始执行任务...");
                         task.run();
-                        Logger.log(getName() + " 任务执行完毕。");
                     }
-                    // 如果 task == null，说明这 100ms 没活干，回到 while 循环开头检查状态
                 } catch (InterruptedException e) {
-                    // 如果在 poll 过程中收到中断信号（shutdownNow 情况）
-                    Logger.log(getName() + " 收到中断信号，立即停止");
-                    break;
+                    if (isShutdown) break; // 收到中断且已关闭，则退出
                 }
             }
+            Logger.log(getName() + " 优雅退出");
         }
     }
 }
