@@ -1,21 +1,33 @@
-Custom Java Concurrency Toolkit (ThreadPool Implementation)
-本项目是一个纯 Java 实现的高性能并发任务处理库，旨在通过手写核心组件，深度理解 Java 并发机制（JUC）、设计模式以及 Android Framework 底层原理。
+# Custom Java Concurrency Toolkit (ThreadPool & Scheduler)
 
-🚀 核心特性
-MyBlockingQueue: 基于 ReentrantLock 和双 Condition 实现的阻塞队列，支持高并发下的生产者-消费者模型，有效防止“虚假唤醒”。
+本项目是一个纯 Java 实现的高性能并发任务处理库。通过手写线程池核心组件，深入理解 Java 内存模型、JUC 工具包以及 Android Framework 的底层消息调度机制。
 
-MyThreadPool: 工业级线程池原型。支持核心线程池复用、优雅关闭（Graceful Shutdown）以及任务异常保护。
+## 🛠 核心组件
 
-MyFuture & MyCallable: 实现了异步任务的结果回传机制，支持阻塞获取结果（get()）以及跨线程异常传递。
+### 1. MyDelayQueue (延时优先级队列)
+* **原理**：基于 `ReentrantLock` 和 `Condition` 实现。
+* **特性**：支持按时间戳排序，`take()` 方法会在任务未到期时通过 `awaitNanos()` 精准阻塞线程。
+* **对标**：Android Framework 中的 `MessageQueue.next()`。
 
-MyDelayQueue & ScheduledTask: 模拟 Android Handler 机制，支持基于时间优先级的定时任务调度。
+### 2. MyThreadPool (线程池)
+* **原理**：维护一组 `Worker` 线程，通过死循环不断从队列中提取任务。
+* **特性**：支持 `execute` (立即执行)、`schedule` (定时执行) 以及 `shutdown/shutdownNow` (优雅/暴力关闭)。
+* **对标**：Java `ThreadPoolExecutor` 与 Android `HandlerThread`。
 
-🛠 设计模式应用
+### 3. MyFuture & MyCallable (异步凭证)
+* **原理**：利用状态位 `isDone` 和条件变量实现结果同步。
+* **特性**：支持跨线程获取返回值，并能将 Worker 线程中的异常传递给调用者线程。
+* **对标**：Java 标准库 `FutureTask`。
 
-生产者-消费者模式: 应用于 MyBlockingQueue，协调任务提交与执行。
+## 🧪 测试用例
 
-享元模式 (Flyweight): 通过线程池复用 Worker 线程，减少系统资源开销。
+项目 `Main.java` 中包含以下核心测试方法：
 
-模板方法模式: 通过 beforeExecute 和 afterExecute 钩子函数提供任务生命周期监控。
+* **testScheduledExecution**: 验证不同延迟时间的任务是否能按时间顺序（而非提交顺序）执行。
+* **testExceptionPropagation**: 验证任务执行崩溃时，主线程能否在 `future.get()` 时捕获异常。
+* **testGracefulShutdown**: 验证线程池在关闭时，是否能将队列中剩余的任务处理完毕。
 
-状态模式: 在 MyFuture 中管理任务从 WAITING 到 DONE 的状态流转。
+## 📝 开发者笔记：并发核心点
+1. **虚假唤醒**：在 `await()` 时必须使用 `while` 循环检查条件。
+2. **锁的释放**：`Condition.await()` 会自动释放当前持有的锁，否则会造成死锁。
+3. **响应中断**：使用 `lockInterruptibly()` 确保线程在阻塞时可以被安全停止，防止僵尸线程。
