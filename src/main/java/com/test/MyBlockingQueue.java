@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class MyBlockingQueue<T> {
+public class MyBlockingQueue<T> implements IMyQueue<T>{
     private final LinkedList<T> queue = new LinkedList<>();
     private final int capacity;
     private final ReentrantLock lock = new ReentrantLock();
@@ -20,6 +20,7 @@ public class MyBlockingQueue<T> {
         this.capacity = capacity;
     }
 
+    @Override
     public void put(T item) throws InterruptedException {
         lock.lockInterruptibly(); // 建议使用可中断锁，这是 Framework 开发中的好习惯
         Logger.log(Thread.currentThread().getName() + " 获取到了锁");

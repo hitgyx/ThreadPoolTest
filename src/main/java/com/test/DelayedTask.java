@@ -1,7 +1,7 @@
 package com.test;
 
 // 实现 Runnable 接口，方便 Worker 直接调用 run()
-public class DelayedTask<V> implements Comparable<DelayedTask<V>>, Runnable {
+public class DelayedTask<V> implements Comparable<DelayedTask<V>>, Runnable{
     private final MyCallable<V> callable;
     private final MyFuture<V> future;
     private final long executeTime;
