@@ -12,25 +12,35 @@ public class Main {
         MyThreadPool pool = new MyThreadPool(2, queue);
 
         try {
-            Logger.log("=== 开始基础执行测试 ===");
-            testBasicExecute(pool);
+//            Logger.log("=== 开始基础执行测试 ===");
+//            testBasicExecute(pool);
+//
+//            Thread.sleep(3000); // 等待基础测试完成
+//
+//            Logger.log("=== 开始 Future 获取测试 ===");
+//            testFutureGet(pool);
+//
+//            Logger.log("=== 开始定时任务测试 ===");
+//            testSchedule(pool);
+//
+//            Thread.sleep(5000); // 预留足够时间让定时任务跑完
+//
+//            Logger.log("=== 开始优雅关闭测试 ===");
+//            testGracefulShutdown(pool);
 
-            Thread.sleep(3000); // 等待基础测试完成
+//            testProxyTask(pool); // 执行代理测试
 
-            Logger.log("=== 开始 Future 获取测试 ===");
-            testFutureGet(pool);
+//            // 权限检查
+//            testPermissionProxy(pool);
+//            testReflectHack();
 
-            Logger.log("=== 开始定时任务测试 ===");
-            testSchedule(pool);
+//            testGenericReflection();
 
-            Thread.sleep(5000); // 预留足够时间让定时任务跑完
-
-            Logger.log("=== 开始优雅关闭测试 ===");
-            testGracefulShutdown(pool);
-
+            testTheWholeFramework(pool);
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return;
     }
 
     /**
@@ -93,5 +103,86 @@ public class Main {
 
         pool.shutdown();
         Logger.log("已发出 shutdown 指令，Worker 线程将在处理完剩余任务后退出。");
+    }
+
+    public static void testProxyTask(MyThreadPool pool) throws Exception {
+        Logger.log("=== 开始动态代理任务测试 ===");
+
+        // 1. 创建真实对象
+        UserService realService = new UserServiceImpl();
+
+        // 2. 创建代理对象 (利用你之前写的 TaskProxyHandler)
+        UserService proxyService = TaskProxyHandler.createProxy(realService, UserService.class);
+
+        // 3. 将代理对象的调用丢进线程池
+        // 注意：当我们调用 proxyService.getName() 时，会自动触发 TaskProxyHandler 的 invoke 方法
+        pool.execute(() -> {
+            proxyService.getName();
+        });
+    }
+
+    public static void testPermissionProxy(MyThreadPool pool) throws Exception {
+        UserService realService = new UserServiceImpl();
+        UserService proxyService = TaskProxyHandler.createProxy(realService, UserService.class);
+
+        pool.execute(() -> {
+            Logger.log("--- 准备执行普通任务 ---");
+            proxyService.getName(); // 应该成功
+
+            Logger.log("--- 准备执行高危任务 ---");
+            proxyService.deleteDatabase(); // 应该被拦截，不会打印“执行高危操作”
+        });
+    }
+
+    public static void testReflectHack() throws Exception {
+        Logger.log("=== 开始暴力反射测试 ===");
+        UserServiceImpl service = new UserServiceImpl();
+        Class<?> clazz = service.getClass();
+
+        // 1. 读取私有变量
+        // getField 只能拿 public，getDeclaredField 可以拿所有声明过的变量
+        java.lang.reflect.Field field = clazz.getDeclaredField("secretKey");
+        // 关键：突破 private 限制
+        field.setAccessible(true);
+        String value = (String) field.get(service);
+        Logger.log("[反射获取] 成功拿到私有变量 secretKey: " + value);
+
+        // 2. 调用私有方法
+        // 这里的参数需要匹配方法名和参数类型列表
+        java.lang.reflect.Method privateMethod = clazz.getDeclaredMethod("internalDebug", String.class);
+        privateMethod.setAccessible(true);
+        // 强制执行方法
+        privateMethod.invoke(service, "ADMIN-CONFIRM");
+    }
+
+    public static void testGenericReflection() {
+        Logger.log("=== 开始泛型反射测试 ===");
+
+        // 实例化子类
+        UserRepository userRepo = new UserRepository();
+
+        // 观察它是否能“记起”自己被擦除的泛型
+        userRepo.printType();
+    }
+
+    public static void testTheWholeFramework(MyThreadPool pool) {
+        SmartTaskDispatcher dispatcher = new SmartTaskDispatcher(pool);
+        UserService service = dispatcher.createService(UserService.class, new UserServiceImpl());
+
+        Logger.log("[Main] 发起异步请求...");
+
+        service.getName(new TaskCallback<String>() {
+            @Override
+            public void onSuccess(String result) {
+                Logger.log("[Main] 收到最终结果并在 UI 线程展示: " + result);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                Logger.log("[Main] 发生错误: " + t.getMessage());
+            }
+        });
+
+        Logger.log("[Main] 已经继续执行后续代码，不被阻塞。");
     }
 }
