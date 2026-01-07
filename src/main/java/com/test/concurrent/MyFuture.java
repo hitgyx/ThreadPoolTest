@@ -1,4 +1,6 @@
-package com.test;
+package com.test.concurrent;
+
+import com.test.utils.Logger;
 
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;

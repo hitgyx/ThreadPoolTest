@@ -1,4 +1,7 @@
-package com.test;
+package com.test.concurrent;
+
+import com.test.utils.Logger;
+import com.test.base.IMyQueue;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -7,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class MyBlockingQueue<T> implements IMyQueue<T>{
+public class MyBlockingQueue<T> implements IMyQueue<T> {
     private final LinkedList<T> queue = new LinkedList<>();
     private final int capacity;
     private final ReentrantLock lock = new ReentrantLock();

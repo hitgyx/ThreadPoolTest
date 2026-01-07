@@ -1,4 +1,4 @@
-package com.test;
+package com.test.base;
 
 /**
  * 异步任务回调接口

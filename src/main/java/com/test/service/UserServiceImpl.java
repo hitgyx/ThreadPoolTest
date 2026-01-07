@@ -1,4 +1,7 @@
-package com.test;
+package com.test.service;
+
+import com.test.utils.Logger;
+import com.test.base.TaskCallback;
 
 public class UserServiceImpl implements UserService {
     // 模拟私有变量

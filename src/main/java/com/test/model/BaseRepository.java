@@ -1,4 +1,6 @@
-package com.test;
+package com.test.model;
+
+import com.test.utils.Logger;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;

@@ -1,4 +1,4 @@
-package com.test;
+package com.test.concurrent;
 
 @FunctionalInterface
 public interface MyCallable<V> {

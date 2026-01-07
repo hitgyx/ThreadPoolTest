@@ -1,4 +1,7 @@
-package com.test;
+package com.test.model;
+
+import com.test.concurrent.MyCallable;
+import com.test.concurrent.MyFuture;
 
 // 实现 Runnable 接口，方便 Worker 直接调用 run()
 public class DelayedTask<V> implements Comparable<DelayedTask<V>>, Runnable{

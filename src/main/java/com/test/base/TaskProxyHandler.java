@@ -1,4 +1,7 @@
-package com.test;
+package com.test.base;
+
+import com.test.utils.Logger;
+import com.test.annotation.TraceTask;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;

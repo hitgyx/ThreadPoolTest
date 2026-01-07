@@ -1,9 +1,16 @@
-package com.test;
+package com.test.concurrent;
+
+import com.test.model.DelayedTask;
+import com.test.utils.Logger;
+import com.test.base.IMyQueue;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class MyThreadPool {
+    // 1. 必须使用 volatile 修饰！防止指令重排序
+    private static volatile MyThreadPool instance;
+
     // 核心解耦：持有接口，不关心具体是阻塞队列还是延时队列
     private final IMyQueue<DelayedTask<?>> taskQueue;
     private final List<Worker> workers = new ArrayList<>();
@@ -13,7 +20,7 @@ public class MyThreadPool {
      * @param numThreads 线程数量
      * @param queue 注入具体的队列实现（如 MyDelayQueue 或 MyBlockingQueue）
      */
-    public MyThreadPool(int numThreads, IMyQueue<DelayedTask<?>> queue) {
+    private MyThreadPool(int numThreads, IMyQueue<DelayedTask<?>> queue) {
         this.taskQueue = queue;
 
         // 初始化并启动工作线程
@@ -22,6 +29,21 @@ public class MyThreadPool {
             workers.add(worker);
             worker.start();
         }
+    }
+
+    // 3. 双重检查锁定的核心获取方法
+    public static MyThreadPool getInstance(int numThreads, IMyQueue<DelayedTask<?>> queue) {
+        // 第一重检查：如果实例已经存在，直接返回，避免进入 synchronized 块带来的性能损耗
+        if (instance == null) {
+            synchronized (MyThreadPool.class) {
+                // 第二重检查：在占有锁的情况下再次检查。
+                // 防止线程 A 和线程 B 同时通过了第一重检查，A 先拿锁创建了对象，B 等 A 释放后如果不检查就会再创建一次
+                if (instance == null) {
+                    instance = new MyThreadPool(numThreads, queue);
+                }
+            }
+        }
+        return instance;
     }
 
     // 兼容旧的 execute 方法，将其转化为延迟 0 毫秒的任务

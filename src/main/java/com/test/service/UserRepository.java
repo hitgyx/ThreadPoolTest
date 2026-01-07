@@ -1,4 +1,6 @@
-package com.test;
+package com.test.service;
+
+import com.test.model.BaseRepository;
 
 // 指定泛型为 UserServiceImpl (或者你定义的任何模型类)
 public class UserRepository extends BaseRepository<UserServiceImpl> {

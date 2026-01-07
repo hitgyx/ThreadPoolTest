@@ -1,4 +1,4 @@
-package com.test;
+package com.test.base;
 
 public interface IMyQueue<T> {
     /** 放入任务 */

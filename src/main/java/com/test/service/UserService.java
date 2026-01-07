@@ -1,4 +1,7 @@
-package com.test;
+package com.test.service;
+
+import com.test.annotation.TraceTask;
+import com.test.base.TaskCallback;
 
 public interface UserService {
     @TraceTask(value = "获取用户名", permission = "USER")

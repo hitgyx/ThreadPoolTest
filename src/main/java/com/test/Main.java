@@ -1,6 +1,17 @@
 package com.test;
 
-import java.util.List;
+import com.test.base.IMyQueue;
+import com.test.base.SmartTaskDispatcher;
+import com.test.base.TaskCallback;
+import com.test.base.TaskProxyHandler;
+import com.test.concurrent.MyDelayQueue;
+import com.test.concurrent.MyFuture;
+import com.test.concurrent.MyThreadPool;
+import com.test.model.DelayedTask;
+import com.test.service.UserRepository;
+import com.test.service.UserService;
+import com.test.service.UserServiceImpl;
+import com.test.utils.Logger;
 
 public class Main {
     public static void main(String[] args) {
@@ -9,7 +20,7 @@ public class Main {
 
         // 2. 创建线程池，将队列注入进去
         // 现在的构造函数不再需要 capacity 参数，因为 MyDelayQueue 是基于优先级堆的自动扩容队列
-        MyThreadPool pool = new MyThreadPool(2, queue);
+        MyThreadPool pool = MyThreadPool.getInstance(4, queue);
 
         try {
 //            Logger.log("=== 开始基础执行测试 ===");
